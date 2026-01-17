@@ -38,5 +38,12 @@ pub enum Pattern {
     CCV,
     CCVC,
     CCVV,
-    CCVVC,
+    CCVVC
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum VVKind {
+    Long,
+    Ai,
+    Au
 }

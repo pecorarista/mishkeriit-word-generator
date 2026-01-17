@@ -5,9 +5,9 @@ mod pattern;
 mod phoneme;
 mod rewrite;
 
-use phoneme::{C, Pattern, V};
+use phoneme::{C, Pattern, V, VVKind};
 
-pub fn build_weighted_index<T: Copy>(items: &[(T, u32)]) -> (Vec<T>, WeightedIndex<u32>) {
+fn build_weighted_index<T: Copy>(items: &[(T, u32)]) -> (Vec<T>, WeightedIndex<u32>) {
     let values: Vec<T> = items.iter().map(|(v, _)| *v).collect();
     let weights: Vec<u32> = items.iter().map(|(_, w)| *w).collect();
     let dist = WeightedIndex::new(&weights).unwrap_or_else(|e| panic!("invalid weights: {:?}", e));
@@ -23,10 +23,12 @@ fn generate_word(
     consonant_dist: &rand::distr::weighted::WeightedIndex<u32>,
     vowels: &[V],
     vowel_dist: &rand::distr::weighted::WeightedIndex<u32>,
+    vv_kinds: &[VVKind],
+    vv_kind_dist: &rand::distr::weighted::WeightedIndex<u32>,
     onset_ccs: &[(C, C)],
     onset_cc_dist: &rand::distr::weighted::WeightedIndex<u32>,
     codas: &[C],
-    coda_dist: &rand::distr::weighted::WeightedIndex<u32>,
+    coda_dist: &rand::distr::weighted::WeightedIndex<u32>
 ) -> String {
     let mut syllables = Vec::with_capacity(n_syllables);
     for _ in 0..n_syllables {
@@ -38,10 +40,12 @@ fn generate_word(
             consonant_dist,
             vowels,
             vowel_dist,
+            vv_kinds,
+            vv_kind_dist,
             onset_ccs,
             onset_cc_dist,
             codas,
-            coda_dist,
+            coda_dist
         );
         let syllable = rewrite::apply_all(&raw_syllable);
         syllables.push(syllable);
@@ -58,7 +62,7 @@ fn main() {
         (Pattern::CCV, 12),
         (Pattern::CCVC, 8),
         (Pattern::CCVV, 4),
-        (Pattern::CCVVC, 3),
+        (Pattern::CCVVC, 3)
     ];
 
     #[rustfmt::skip]
@@ -81,8 +85,11 @@ fn main() {
         (V::A, 5)
     ];
 
+    const VV_KIND_WEIGHTS: &[(VVKind, u32)] =
+        &[(VVKind::Long, 5), (VVKind::Ai, 2), (VVKind::Au, 2)];
+
     #[rustfmt::skip]
-    const ONSET_CC_WEIGHTS: &[( (C, C), u32 )] = &[
+    const ONSET_CC_WEIGHTS: &[((C, C), u32)] = &[
         // Cr: (p | t | k | b | d | g )r
         ((C::P, C::R), 5),
         ((C::T, C::R), 5),
@@ -110,6 +117,7 @@ fn main() {
     let (patterns, pattern_dist) = build_weighted_index(PATTERN_WEIGHTS);
     let (consonants, consonant_dist) = build_weighted_index(CONSONANT_WEIGHTS);
     let (vowels, vowel_dist) = build_weighted_index(VOWEL_WEIGHTS);
+    let (vv_kinds, vv_kind_dist) = build_weighted_index(VV_KIND_WEIGHTS);
     let (onset_ccs, onset_cc_dist) = build_weighted_index(ONSET_CC_WEIGHTS);
     let (codas, coda_dist) = build_weighted_index(CODA_WEIGHTS);
 
@@ -125,10 +133,12 @@ fn main() {
             &consonant_dist,
             &vowels,
             &vowel_dist,
+            &vv_kinds,
+            &vv_kind_dist,
             &onset_ccs,
             &onset_cc_dist,
             &codas,
-            &coda_dist,
+            &coda_dist
         );
         println!("{}", word);
     }

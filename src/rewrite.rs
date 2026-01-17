@@ -1,19 +1,17 @@
-pub fn apply_all(s: &str) -> String {
-    let s = rule_lowercase(s);
-    rule_long_vowels(&s)
+pub fn apply_all(input: &str) -> String {
+    let rules: &[fn(String) -> String] = &[rule_lowercase, rule_glottal_stop, rule_long_vowels];
+    rules.iter().fold(input.to_string(), |acc, rule| rule(acc))
 }
 
-fn rule_lowercase(s: &str) -> String {
-    let mut out = String::with_capacity(s.len());
-    for ch in s.chars() {
-        for lc in ch.to_lowercase() {
-            out.push(lc);
-        }
-    }
-    out
+fn rule_glottal_stop(s: String) -> String {
+    s.replace('q', "'")
 }
 
-fn rule_long_vowels(s: &str) -> String {
+fn rule_lowercase(s: String) -> String {
+    s.chars().flat_map(|ch| ch.to_lowercase()).collect()
+}
+
+fn rule_long_vowels(s: String) -> String {
     let mut out = String::with_capacity(s.len());
     let mut s_peek = s.chars().peekable();
 
@@ -24,7 +22,7 @@ fn rule_long_vowels(s: &str) -> String {
             ('o', Some('o')) => Some('ō'),
             ('u', Some('u')) => Some('ū'),
             ('a', Some('a')) => Some('ā'),
-            _ => None,
+            _ => None
         };
 
         if let Some(m) = macron {
